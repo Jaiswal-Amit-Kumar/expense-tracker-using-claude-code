@@ -34,11 +34,10 @@
             <span class="brand-icon">◈</span>
             <span class="footer-name">Spendly</span>
             <p class="footer-copy">Track every rupee. Own your finances.</p>
-            <!-- TODO: Update href values when actual pages are created -->
             <div class="footer-links">
-                <a href="#terms" class="footer-link">Terms and Conditions</a>
+                <a href="{{ url_for('terms') }}" class="footer-link">Terms and Conditions</a>
                 <span class="footer-link-separator">|</span>
-                <a href="#privacy" class="footer-link">Privacy Policy</a>
+                <a href="{{ url_for('privacy') }}" class="footer-link">Privacy Policy</a>
             </div>
         </div>
     </footer>
