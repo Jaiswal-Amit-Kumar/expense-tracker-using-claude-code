@@ -1,6 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for, session
+from werkzeug.security import check_password_hash
+
+from database.db import init_db, seed_db, get_user_by_email, create_user
 
 app = Flask(__name__)
+app.secret_key = "spendly-secret-key-change-in-production"
 
 
 # ------------------------------------------------------------------ #
@@ -12,13 +16,52 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        # Validation
+        if not name or not email or not password:
+            return render_template("register.html", error="All fields are required")
+        if len(password) < 8:
+            return render_template("register.html", error="Password must be at least 8 characters")
+
+        # Create user
+        user_id = create_user(name, email, password)
+        if user_id is None:
+            return render_template("register.html", error="Email already registered")
+
+        # Log in automatically
+        session["user_id"] = user_id
+        session["user_name"] = name
+
+        return redirect(url_for("profile"))
+
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            return render_template("login.html", error="All fields are required")
+
+        user = get_user_by_email(email)
+        if user is None or not check_password_hash(user["password_hash"], password):
+            return render_template("login.html", error="Invalid email or password")
+
+        # Set session
+        session["user_id"] = user["id"]
+        session["user_name"] = user["name"]
+
+        return redirect(url_for("profile"))
+
     return render_template("login.html")
 
 
@@ -38,7 +81,8 @@ def privacy():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
@@ -62,4 +106,7 @@ def delete_expense(id):
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        init_db()
+        seed_db()
     app.run(debug=True, port=5001)
